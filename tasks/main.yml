@@ -45,7 +45,7 @@
     name: nftables
     enabled: true
     state: stopped
-  when: nftables_packages_check.rc == 0
+  when: (nftables_packages_check.rc | default(0)) == 0
   tags:
     - nftables
     - systemd
