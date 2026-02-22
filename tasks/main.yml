@@ -1,0 +1,51 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for ansible-role-nftables
+
+- name: Install nftables packages
+  community.general.pacman:
+    name:
+      - iptables-nft
+      - nftables
+    state: present
+  register: nftables_packages_install
+
+- name: Confirm nftables packages are installed
+  ansible.builtin.command: pacman -Q iptables-nft nftables
+  register: nftables_packages_check
+  changed_when: false
+  failed_when: nftables_packages_check.rc != 0
+
+- name: Deploy server nftables config (THEMIS)
+  ansible.builtin.copy:
+    src: server.conf
+    dest: /etc/nftables.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: nftables_hostname == 'THEMIS'
+  tags:
+    - nftables
+    - config
+
+- name: Deploy workstation nftables config (non-THEMIS)
+  ansible.builtin.copy:
+    src: workstation.conf
+    dest: /etc/nftables.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: nftables_hostname != 'THEMIS'
+  tags:
+    - nftables
+    - config
+
+- name: Enable nftables.service (do not start)
+  ansible.builtin.systemd:
+    name: nftables
+    enabled: true
+    state: stopped
+  when: nftables_packages_check.rc == 0
+  tags:
+    - nftables
+    - systemd
