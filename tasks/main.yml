@@ -28,6 +28,36 @@
     - nftables
     - config
 
+- name: Ensure nftables systemd drop-in directory exists (THEMIS)
+  ansible.builtin.file:
+    path: /etc/systemd/system/nftables.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: nftables_hostname == 'THEMIS'
+  tags:
+    - nftables
+    - config
+    - systemd
+
+- name: Deploy nftables systemd override to preserve Docker rules (THEMIS)
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/nftables.service.d/docker-preserve.conf
+    content: |
+      [Service]
+      ExecStart=
+      ExecStart=/bin/sh -c 'nft delete table inet filter 2>/dev/null; exec /usr/sbin/nft -f /etc/nftables.conf'
+    owner: root
+    group: root
+    mode: '0644'
+  when: nftables_hostname == 'THEMIS'
+  notify: reload systemd
+  tags:
+    - nftables
+    - config
+    - systemd
+
 - name: Deploy workstation nftables config (non-THEMIS)
   ansible.builtin.copy:
     src: workstation.conf
